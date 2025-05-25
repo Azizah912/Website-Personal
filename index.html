@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Molecular Shapes Chemistry Game</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; color: white; }
+
+        .welcome-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+        .welcome-container { max-width: 700px; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px); border-radius: 30px; padding: 30px; border: 2px solid rgba(255, 255, 255, 0.2); text-align: center; }
+        .welcome-title { font-size: 3em; margin-bottom: 20px; text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4); }
+        .welcome-subtitle { font-size: 1.2em; margin-bottom: 20px; opacity: 0.9; }
+
+        .instructions { background: rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 20px; margin: 20px 0; text-align: left; }
+        .instructions h4 { color: #4ecdc4; margin: 15px 0 8px 0; }
+        .instructions ul { list-style: none; padding-left: 15px; }
+        .instructions li { margin-bottom: 5px; line-height: 1.4; }
+        .instructions li::before { content: "▶"; color: #4ecdc4; margin-right: 8px; }
+
+        .atoms-preview { display: flex; justify-content: center; gap: 10px; margin: 15px 0; flex-wrap: wrap; }
+        .atom-preview { width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8em; border: 2px solid rgba(255, 255, 255, 0.3); }
+
+        .start-button { background: linear-gradient(45deg, #4caf50, #45a049); color: white; border: none; padding: 15px 35px; font-size: 1.2em; font-weight: bold; border-radius: 50px; cursor: pointer; transition: all 0.3s ease; margin-top: 15px; }
+        .start-button:hover { transform: translateY(-2px) scale(1.05); box-shadow: 0 8px 20px rgba(76, 175, 80, 0.4); }
+
+        .game-container { max-width: 1100px; margin: 0 auto; padding: 20px; display: none; }
+        .header { text-align: center; margin-bottom: 20px; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 15px; padding: 15px; }
+        .game-title { font-size: 2em; margin-bottom: 10px; }
+        .game-stats { display: flex; justify-content: space-around; align-items: center; }
+        .stat-item { background: rgba(255, 255, 255, 0.2); padding: 8px 15px; border-radius: 10px; font-weight: bold; }
+
+        .lives { color: #ff6b6b; display: flex; align-items: center; gap: 8px; }
+        .hearts-container { display: flex; gap: 4px; }
+        .heart { width: 18px; height: 16px; position: relative; transform: rotate(-45deg); }
+        .heart:before, .heart:after { content: ''; width: 10px; height: 16px; position: absolute; border-radius: 10px 10px 0 0; background: #ff6b6b; transform: rotate(-45deg); transform-origin: 0 100%; }
+        .heart:after { left: 0; transform: rotate(45deg); transform-origin: 100% 100%; }
+        .heart.lost:before, .heart.lost:after { background: #666; opacity: 0.3; }
+
+        .main-content { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .panel { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 15px; padding: 15px; border: 1px solid rgba(255, 255, 255, 0.2); }
+        .panel h3 { font-size: 1.1em; margin-bottom: 10px; text-align: center; }
+
+        .atoms-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .atom { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: grab; transition: all 0.3s ease; border: 2px solid rgba(255, 255, 255, 0.3); margin: 0 auto; font-size: 0.85em; }
+        .atom:hover { transform: scale(1.1); box-shadow: 0 0 15px rgba(255, 255, 255, 0.5); }
+        .atom.hydrogen { background: #ff6b6b; } .atom.oxygen { background: #4ecdc4; } .atom.nitrogen { background: #45b7d1; }
+        .atom.carbon { background: #96ceb4; } .atom.chlorine { background: #feca57; } .atom.fluorine { background: #ff9ff3; } 
+        .atom.boron { background: #a8e6cf; } .atom.sulfur { background: #f39c12; } .atom.phosphorus { background: #e74c3c; }
+        .atom.xenon { background: #2c3e50; } .atom.iodine { background: #34495e; }
+
+        .molecule-canvas { background: rgba(255, 255, 255, 0.05); border: 2px dashed rgba(255, 255, 255, 0.3); border-radius: 10px; height: 300px; position: relative; overflow: hidden; }
+        .question-content { background: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; }
+        .shape-option { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 6px; padding: 6px; margin: 3px 0; cursor: pointer; transition: all 0.3s ease; font-size: 0.9em; }
+        .shape-option:hover { background: rgba(255, 255, 255, 0.2); }
+        .shape-option.selected { background: rgba(76, 175, 80, 0.5); border-color: #4caf50; }
+
+        .controls { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 20px; font-size: 1em; font-weight: bold; cursor: pointer; transition: all 0.3s ease; }
+        .btn-primary { background: linear-gradient(45deg, #4caf50, #45a049); color: white; }
+        .btn-secondary { background: linear-gradient(45deg, #ff6b6b, #ff5252); color: white; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
+
+        .placed-atom { position: absolute; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: move; border: 2px solid white; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); font-size: 0.8em; }
+        .bond { position: absolute; background: white; height: 3px; transform-origin: left center; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); }
+
+        .feedback { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(10px); border-radius: 15px; padding: 25px; text-align: center; z-index: 1000; max-width: 450px; border: 2px solid rgba(255, 255, 255, 0.3); }
+        .feedback.correct { border-color: #4caf50; } .feedback.incorrect { border-color: #ff6b6b; }
+        .feedback h3 { font-size: 1.3em; margin-bottom: 10px; }
+        .feedback.correct h3 { color: #4caf50; } .feedback.incorrect h3 { color: #ff6b6b; }
+
+        .game-over { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+        .game-over-content { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; padding: 30px; text-align: center; max-width: 350px; border: 2px solid rgba(255, 255, 255, 0.3); }
+
+        .difficulty-badge { display: inline-block; padding: 4px 8px; border-radius: 12px; font-size: 0.75em; margin-left: 8px; }
+        .difficulty-easy { background: #4caf50; } .difficulty-med { background: #ff9800; } .difficulty-hard { background: #f44336; }
+
+        @media (max-width: 768px) {
+            .main-content { grid-template-columns: 1fr; }
+            .atoms-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="welcome-screen" id="welcome-screen">
+        <div class="welcome-container">
+            <h1 class="welcome-title">🧪 Molecular Shapes</h1>
+            <p class="welcome-subtitle">Master Chemistry through Interactive Gameplay</p>
+            
+            <div class="atoms-preview">
+                <div class="atom-preview" style="background: #ff6b6b;">H</div>
+                <div class="atom-preview" style="background: #4ecdc4;">O</div>
+                <div class="atom-preview" style="background: #45b7d1;">N</div>
+                <div class="atom-preview" style="background: #96ceb4;">C</div>
+                <div class="atom-preview" style="background: #feca57;">Cl</div>
+                <div class="atom-preview" style="background: #ff9ff3;">F</div>
+                <div class="atom-preview" style="background: #f39c12;">S</div>
+                <div class="atom-preview" style="background: #e74c3c;">P</div>
+            </div>
+            
+            <div class="instructions">
+                <h4>🎯 How to Play</h4>
+                <ul>
+                    <li>Build molecular structures by dragging atoms to canvas</li>
+                    <li>Click atoms to create bonds between them</li>
+                    <li>Select correct molecular shape using VSEPR theory</li>
+                    <li>Progress through 12 levels with increasing difficulty</li>
+                </ul>
+                
+                <h4>💡 Scoring</h4>
+                <ul>
+                    <li>Correct answers: 100-400 points per level</li>
+                    <li>Bonus for medium (1.5x) and hard (2x) levels</li>
+                    <li>Master all 12 levels to become Chemistry Expert!</li>
+                </ul>
+            </div>
+            
+            <button class="start-button" onclick="startGame()">🚀 Start Game</button>
+        </div>
+    </div>
+
+    <div class="game-container" id="game-container">
+        <div class="header">
+            <h1 class="game-title">🧪 Molecular Shapes Game</h1>
+            <div class="game-stats">
+                <div class="stat-item">Level: <span id="level">1</span>/12</div>
+                <div class="stat-item">Score: <span id="score">0</span></div>
+                <div class="stat-item lives">
+                    Lives: 
+                    <div class="hearts-container" id="hearts-container">
+                        <div class="heart"></div>
+                        <div class="heart"></div>
+                        <div class="heart"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="panel">
+                <h3>Available Atoms</h3>
+                <div class="atoms-grid">
+                    <div class="atom hydrogen" draggable="true" data-element="H">H</div>
+                    <div class="atom oxygen" draggable="true" data-element="O">O</div>
+                    <div class="atom nitrogen" draggable="true" data-element="N">N</div>
+                    <div class="atom carbon" draggable="true" data-element="C">C</div>
+                    <div class="atom chlorine" draggable="true" data-element="Cl">Cl</div>
+                    <div class="atom fluorine" draggable="true" data-element="F">F</div>
+                    <div class="atom boron" draggable="true" data-element="B">B</div>
+                    <div class="atom sulfur" draggable="true" data-element="S">S</div>
+                    <div class="atom phosphorus" draggable="true" data-element="P">P</div>
+                    <div class="atom xenon" draggable="true" data-element="Xe">Xe</div>
+                    <div class="atom iodine" draggable="true" data-element="I">I</div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>Build Your Molecule</h3>
+                <div class="molecule-canvas" id="molecule-canvas"></div>
+            </div>
+
+            <div class="panel">
+                <h3>Question</h3>
+                <div class="question-content" id="question-content"></div>
+                <div class="shape-options" id="shape-options"></div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" id="check-btn">Check Answer</button>
+            <button class="btn btn-secondary" id="clear-btn">Clear Canvas</button>
+        </div>
+    </div>
+
+    <script>
+        function startGame() {
+            document.getElementById('welcome-screen').style.display = 'none';
+            document.getElementById('game-container').style.display = 'block';
+            window.game = new ChemistryGame();
+        }
+
+        class ChemistryGame {
+            constructor() {
+                this.level = 1; this.score = 0; this.lives = 3; this.placedAtoms = []; this.bonds = []; this.selectedShape = null;
+                
+                this.questions = [
+                    {formula: "H₂O", atoms: {H: 2, O: 1}, correctShape: "bent", difficulty: "easy", shapes: ["linear", "bent", "trigonal planar", "tetrahedral"], explanation: "Water has bent shape due to two lone pairs on oxygen."},
+                    {formula: "CH₄", atoms: {C: 1, H: 4}, correctShape: "tetrahedral", difficulty: "easy", shapes: ["linear", "bent", "trigonal planar", "tetrahedral"], explanation: "Methane has tetrahedral shape with 109.5° bond angles."},
+                    {formula: "NH₃", atoms: {N: 1, H: 3}, correctShape: "trigonal pyramidal", difficulty: "easy", shapes: ["trigonal planar", "trigonal pyramidal", "bent", "tetrahedral"], explanation: "Ammonia has trigonal pyramidal shape due to lone pair on nitrogen."},
+                    {formula: "BF₃", atoms: {B: 1, F: 3}, correctShape: "trigonal planar", difficulty: "easy", shapes: ["linear", "trigonal planar", "trigonal pyramidal", "tetrahedral"], explanation: "Boron trifluoride has trigonal planar shape with 120° angles."},
+                    {formula: "CO₂", atoms: {C: 1, O: 2}, correctShape: "linear", difficulty: "med", shapes: ["linear", "bent", "trigonal planar", "tetrahedral"], explanation: "Carbon dioxide has linear shape with 180° bond angle."},
+                    {formula: "SO₂", atoms: {S: 1, O: 2}, correctShape: "bent", difficulty: "med", shapes: ["linear", "bent", "trigonal planar", "pyramidal"], explanation: "Sulfur dioxide has bent shape due to lone pair on sulfur."},
+                    {formula: "PCl₃", atoms: {P: 1, Cl: 3}, correctShape: "trigonal pyramidal", difficulty: "med", shapes: ["trigonal planar", "trigonal pyramidal", "tetrahedral", "bent"], explanation: "Phosphorus trichloride has pyramidal shape due to lone pair."},
+                    {formula: "H₂S", atoms: {H: 2, S: 1}, correctShape: "bent", difficulty: "med", shapes: ["linear", "bent", "trigonal planar", "tetrahedral"], explanation: "Hydrogen sulfide has bent shape similar to water."},
+                    {formula: "SF₄", atoms: {S: 1, F: 4}, correctShape: "seesaw", difficulty: "hard", shapes: ["tetrahedral", "trigonal bipyramidal", "seesaw", "square planar"], explanation: "Sulfur tetrafluoride has seesaw shape due to lone pair."},
+                    {formula: "ClF₃", atoms: {Cl: 1, F: 3}, correctShape: "T-shaped", difficulty: "hard", shapes: ["trigonal planar", "trigonal pyramidal", "T-shaped", "bent"], explanation: "Chlorine trifluoride has T-shaped geometry."},
+                    {formula: "XeF₄", atoms: {Xe: 1, F: 4}, correctShape: "square planar", difficulty: "hard", shapes: ["tetrahedral", "square planar", "seesaw", "square pyramidal"], explanation: "Xenon tetrafluoride has square planar shape."},
+                    {formula: "IF₅", atoms: {I: 1, F: 5}, correctShape: "square pyramidal", difficulty: "hard", shapes: ["trigonal bipyramidal", "square pyramidal", "pentagonal", "octahedral"], explanation: "Iodine pentafluoride has square pyramidal shape."}
+                ];
+                
+                this.elementColors = {'H': '#ff6b6b', 'O': '#4ecdc4', 'N': '#45b7d1', 'C': '#96ceb4', 'Cl': '#feca57', 'F': '#ff9ff3', 'B': '#a8e6cf', 'S': '#f39c12', 'P': '#e74c3c', 'Xe': '#2c3e50', 'I': '#34495e'};
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners(); this.loadQuestion(); this.updateDisplay();
+            }
+
+            setupEventListeners() {
+                const canvas = document.getElementById('molecule-canvas');
+                document.querySelectorAll('.atom').forEach(atom => {
+                    atom.addEventListener('dragstart', (e) => e.dataTransfer.setData('text/plain', atom.dataset.element));
+                });
+
+                canvas.addEventListener('dragover', (e) => e.preventDefault());
+                canvas.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const element = e.dataTransfer.getData('text/plain');
+                    const rect = canvas.getBoundingClientRect();
+                    this.addAtom(element, e.clientX - rect.left - 20, e.clientY - rect.top - 20);
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('shape-option')) {
+                        document.querySelectorAll('.shape-option').forEach(opt => opt.classList.remove('selected'));
+                        e.target.classList.add('selected');
+                        this.selectedShape = e.target.dataset.shape;
+                    }
+                });
+
+                document.getElementById('check-btn').addEventListener('click', () => this.checkAnswer());
+                document.getElementById('clear-btn').addEventListener('click', () => this.clearCanvas());
+                canvas.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('placed-atom')) this.selectAtomForBonding(e.target);
+                });
+            }
+
+            addAtom(element, x, y) {
+                const canvas = document.getElementById('molecule-canvas');
+                const atom = document.createElement('div');
+                atom.className = `placed-atom ${element.toLowerCase()}`;
+                atom.textContent = element;
+                atom.style.left = x + 'px'; atom.style.top = y + 'px';
+                atom.style.backgroundColor = this.elementColors[element];
+                atom.dataset.element = element; atom.dataset.index = this.placedAtoms.length;
+                canvas.appendChild(atom);
+                this.placedAtoms.push({element, x: x + 20, y: y + 20, domElement: atom});
+                this.makeDraggable(atom);
+            }
+
+            makeDraggable(element) {
+                let isDragging = false, startX, startY, initialX, initialY;
+                element.addEventListener('mousedown', (e) => {
+                    isDragging = true; startX = e.clientX; startY = e.clientY;
+                    initialX = parseInt(element.style.left); initialY = parseInt(element.style.top);
+                });
+                document.addEventListener('mousemove', (e) => {
+                    if (!isDragging) return;
+                    const deltaX = e.clientX - startX, deltaY = e.clientY - startY;
+                    element.style.left = (initialX + deltaX) + 'px'; element.style.top = (initialY + deltaY) + 'px';
+                    const index = parseInt(element.dataset.index);
+                    this.placedAtoms[index].x = initialX + deltaX + 20; this.placedAtoms[index].y = initialY + deltaY + 20;
+                    this.updateBonds();
+                });
+                document.addEventListener('mouseup', () => isDragging = false);
+            }
+
+            selectAtomForBonding(atomElement) {
+                const index = parseInt(atomElement.dataset.index);
+                if (this.selectedAtomIndex === undefined) {
+                    this.selectedAtomIndex = index; atomElement.style.border = '3px solid yellow';
+                } else if (this.selectedAtomIndex === index) {
+                    this.selectedAtomIndex = undefined; atomElement.style.border = '2px solid white';
+                } else {
+                    this.addBond(this.selectedAtomIndex, index);
+                    document.querySelectorAll('.placed-atom').forEach(atom => atom.style.border = '2px solid white');
+                    this.selectedAtomIndex = undefined;
+                }
+            }
+
+            addBond(index1, index2) {
+                const bondExists = this.bonds.some(bond => (bond[0] === index1 && bond[1] === index2) || (bond[0] === index2 && bond[1] === index1));
+                if (!bondExists) { this.bonds.push([index1, index2]); this.drawBond(index1, index2); }
+            }
+
+            drawBond(index1, index2) {
+                const atom1 = this.placedAtoms[index1], atom2 = this.placedAtoms[index2];
+                const canvas = document.getElementById('molecule-canvas'), bond = document.createElement('div');
+                bond.className = 'bond';
+                const dx = atom2.x - atom1.x, dy = atom2.y - atom1.y;
+                const length = Math.sqrt(dx * dx + dy * dy), angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                bond.style.left = atom1.x + 'px'; bond.style.top = atom1.y + 'px';
+                bond.style.width = length + 'px'; bond.style.transform = `rotate(${angle}deg)`;
+                canvas.appendChild(bond);
+            }
+
+            updateBonds() {
+                document.querySelectorAll('.bond').forEach(bond => bond.remove());
+                this.bonds.forEach(bond => this.drawBond(bond[0], bond[1]));
+            }
+
+            loadQuestion() {
+                if (this.level <= this.questions.length) {
+                    this.currentQuestion = this.questions[this.level - 1];
+                    const difficultyBadge = `<span class="difficulty-badge difficulty-${this.currentQuestion.difficulty}">${this.currentQuestion.difficulty.toUpperCase()}</span>`;
+                    document.getElementById('question-content').innerHTML = `<h4>Build: ${this.currentQuestion.formula}${difficultyBadge}</h4><p>Create structure and select shape.</p>`;
+                    const shapeOptions = document.getElementById('shape-options');
+                    shapeOptions.innerHTML = '<h4>Select Shape:</h4>';
+                    this.currentQuestion.shapes.forEach(shape => {
+                        const option = document.createElement('div');
+                        option.className = 'shape-option'; option.textContent = shape.charAt(0).toUpperCase() + shape.slice(1).replace(/([A-Z])/g, ' $1');
+                        option.dataset.shape = shape; shapeOptions.appendChild(option);
+                    });
+                }
+            }
+
+            checkAnswer() {
+                if (!this.selectedShape) { alert('Please select a molecular shape!'); return; }
+                const isCorrect = this.validateMolecule(), shapeCorrect = this.selectedShape === this.currentQuestion.correctShape;
+                if (isCorrect && shapeCorrect) {
+                    let baseScore = 100 * this.level;
+                    if (this.currentQuestion.difficulty === 'med') baseScore *= 1.5;
+                    if (this.currentQuestion.difficulty === 'hard') baseScore *= 2;
+                    this.score += Math.floor(baseScore);
+                    this.showFeedback(true, this.currentQuestion.explanation);
+                } else {
+                    this.lives--; this.showFeedback(false, this.currentQuestion.explanation);
+                }
+                this.updateDisplay();
+            }
+
+            validateMolecule() {
+                const requiredAtoms = this.currentQuestion.atoms, placedElements = {};
+                this.placedAtoms.forEach(atom => placedElements[atom.element] = (placedElements[atom.element] || 0) + 1);
+                for (const element in requiredAtoms) {
+                    if (placedElements[element] !== requiredAtoms[element]) return false;
+                }
+                return Object.keys(placedElements).length === Object.keys(requiredAtoms).length && this.bonds.length > 0;
+            }
+
+            showFeedback(correct, explanation) {
+                const feedback = document.createElement('div');
+                feedback.className = `feedback ${correct ? 'correct' : 'incorrect'}`;
+                feedback.innerHTML = `<h3>${correct ? '🎉 Correct!' : '❌ Incorrect'}</h3><p>${explanation}</p><button class="btn btn-primary" onclick="this.parentElement.remove(); ${correct ? 'game.nextLevel()' : ''}">${correct ? 'Next Level' : 'Continue'}</button>`;
+                document.body.appendChild(feedback);
+                if (correct) setTimeout(() => { if (feedback.parentElement) { feedback.remove(); this.nextLevel(); } }, 3500);
+                else if (this.lives <= 0) setTimeout(() => { feedback.remove(); this.gameOver(); }, 2500);
+            }
+
+            nextLevel() {
+                this.level++; this.clearCanvas();
+                if (this.level <= this.questions.length) this.loadQuestion(); else this.showVictory();
+            }
+
+            clearCanvas() {
+                document.getElementById('molecule-canvas').innerHTML = '';
+                this.placedAtoms = []; this.bonds = []; this.selectedShape = null; this.selectedAtomIndex = undefined;
+                document.querySelectorAll('.shape-option').forEach(opt => opt.classList.remove('selected'));
+            }
+
+            updateDisplay() {
+                document.getElementById('level').textContent = this.level;
+                document.getElementById('score').textContent = this.score;
+                document.querySelectorAll('.heart').forEach((heart, index) => {
+                    heart.classList.toggle('lost', index >= this.lives);
+                });
+            }
+
+            gameOver() {
+                const gameOver = document.createElement('div');
+                gameOver.className = 'game-over';
+                gameOver.innerHTML = `<div class="game-over-content"><h2>🔬 Game Over!</h2><p>Final Score: ${this.score}</p><p>Level Reached: ${this.level}</p><button class="btn btn-primary" onclick="location.reload()">Play Again</button></div>`;
+                document.body.appendChild(gameOver);
+            }
+
+            showVictory() {
+                const victory = document.createElement('div');
+                victory.className = 'game-over';
+                victory.innerHTML = `<div class="game-over-content"><h2>🏆 Chemistry Expert!</h2><p>You mastered all 12 molecular shapes!</p><p>Final Score: ${this.score}</p><button class="btn btn-primary" onclick="location.reload()">Play Again</button></div>`;
+                document.body.appendChild(victory);
+            }
+        }
+    </script>
+</body>
+</html>
